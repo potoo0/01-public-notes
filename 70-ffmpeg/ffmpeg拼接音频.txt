@@ -1,0 +1,15 @@
+https://trac.ffmpeg.org/wiki/Concatenate#protocol
+在线工具: https://mp3cut.net/tw/change-pitch
+
+
+# 产生 1s 的静音文件
+ffmpeg -f lavfi -t 1 -i anullsrc=r=64000:cl=mono test.mp3 -y
+
+# 拼接方式
+ffmpeg -i new.mp3 -i test.mp3 -i all2.mp3 -filter_complex '[0:0][1:0][2:0]concat=n=3:v=0:a=1 [outa]' -map [outa] new2.mp3
+
+参数解释: 
+  1. "[InputIndex:StreamIndex]": 定义需要处理输入, 其中 "StreamIndex": 0为Video,1为Audio
+  2. "concat=n=3:v=0:a=1": "concat": 合并, "n=3": 说明有三个输入, "v=0": 表示合成 0 段 Video, "a=1": 表示合成 1 段 Audio, "[outv][outa]": 表示合成阶段的输出流有 outv 和 outa 两部分
+  3. "-map [outa]": 选择最终输出的流
+

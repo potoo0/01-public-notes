@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+function gry() {
+  #echo "git review: '$(pwd)'"
+  git review "$(git symbolic-ref --short -q HEAD)" -R -y
+}
+
+PRJ_ROOT=$(realpath "${1:-./}")
+
+echo "list subdir for $PRJ_ROOT"
+mapfile -t PRJ_DIRS < <(find "$PRJ_ROOT" -name '.git' -a -printf '%h\n' | sort -u)
+
+#declare -p PRJ_DIRS
+echo '>>>>> project dirs:'
+printf '\t%s\n' "${PRJ_DIRS[@]}"
+echo '<<<<<'
+
+for dir_path in "${PRJ_DIRS[@]}"; do
+  cd "$dir_path"
+  git rev-parse --is-inside-work-tree > /dev/null || continue
+  echo -e "\n\n>>>>> try git review for: $dir_path"
+  if [[ $(git log --branches --not --remotes --simplify-by-decoration --decorate --oneline) ]]; then
+    gry || echo -e "\033[31m>>>>>>>>>> ignore git error for: $dir_path >>>>>>>>>>\033[0m"
+  else
+    echo 'skip... no change!'
+  fi
+done

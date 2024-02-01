@@ -1,0 +1,9 @@
+# pattern doc: https://git-scm.com/docs/gitignore
+zz-*
+tmp*
+
+.idea
+.vscode
+
+.ipynb_checkpoints
+__pycache__

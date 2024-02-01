@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>share</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='dropzone/dropzone.min.css') }}" />
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='basic.css') }}" />
+</head>
+
+<body>
+  <div class="container-fluid" id="containers">
+    <h3>share in</h3>
+    <h5>当前目录 {{ subdir }}</h5>
+    <div class="table-responsive" style="width: 70%">
+      <table class="table table-striped table-sm text-nowrap">
+        <thead>
+          <tr>
+            <th>文件/目录</th>
+            <th>修改时间</th>
+            <th>大小</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if subdir %}
+          <tr>
+            <td>
+              <a href="{{ url_for('public', subdir=subdir + '..') }}">
+                ..{{ossep}}
+              </a>
+            </td>
+            <td></td>
+            <td></td>
+          </tr>
+          {% endif %} {% for i in contents %}
+          <tr>
+            <td>
+              <a href="{{ url_for('public', subdir=subdir + i.filename) }}">
+                {{ i.filename }}
+              </a>
+            </td>
+            <td>{{ i.mtime }}</td>
+            <td>{{ i.size }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <h3>share out</h3>
+    <div class="uploader" style="width: 70%">
+      <form action="{{ url_for('upload') }}" class="dropzone" id="uploadZone"></form>
+    </div>
+    <h3>share text</h3>
+    <div>
+      <div class="form-group green-border-focus">
+        <label for="exampleFormControlTextarea5">textarea</label>
+        <textarea class="form-control" id="textarea" rows="3" style="max-width: 70%"></textarea>
+        <button type="button" class="btn btn-primary" data-clipboard-action="copy"
+          data-clipboard-target="#textarea">copy to clipboard</button>
+      </div>
+    </div>
+    <!-- <div id="debug"></div> -->
+  </div>
+  <script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='dropzone/dropzone.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='clipboard.min.js') }}"></script>
+  <script>
+    Dropzone.options.uploadZone = {
+      maxFilesize: 512,
+      timeout: 0
+    };
+  </script>
+  <script>
+    new ClipboardJS('.btn');
+  </script>
+  <script>
+    function debounce(fn, wait) {
+      var timer = null;
+      return function () {
+        if (timer !== null) {
+          clearTimeout(timer);
+        }
+        timer = setTimeout(fn, wait);
+      };
+    }
+    $(document).ready(
+      function () {
+        $.ajax({
+          url: "{{ url_for('readtext') }}",
+          type: "post",
+          error: function (res) {
+            console.error("更新失败");
+          },
+          success: function (res) {
+            $("#textarea").val(res["data"]);
+          },
+        });
+      }
+      // setInterval(() => {
+      //   setTimeout(function () {
+      //     $.ajax({
+      //       url: "{{ url_for('readtext') }}",
+      //       type: "post",
+      //       error: function (res) {
+      //         console.error("更新失败");
+      //       },
+      //       success: function (res) {
+      //         $("#textarea").val(res['data'])
+      //       },
+      //     });
+      //   }, 0);
+      // }, 1000 * 10)
+    );
+    var sendToServer = debounce(function () {
+      $.ajax({
+        url: "{{ url_for('sharetext') }}",
+        type: "post",
+        data: JSON.stringify({ data: $("#textarea").val() }),
+        contentType: "application/json;charset=utf-8",
+        error: function (res) {
+          console.error("上传失败");
+        },
+        success: function (res) {
+          // document.getElementById("debug").innerText = JSON.stringify(res);
+        },
+      });
+    }, 1000);
+
+    var isInputZh = false;
+    var textarea = document.getElementById("textarea");
+
+    textarea.addEventListener(
+      "compositionstart",
+      function (e) {
+        isInputZh = true;
+      },
+      false
+    );
+    textarea.addEventListener(
+      "compositionend",
+      function (e) {
+        isInputZh = false;
+        sendToServer();
+      },
+      false
+    );
+    textarea.addEventListener(
+      "input",
+      function (e) {
+        if (isInputZh) return;
+        sendToServer();
+      },
+      false
+    );
+  </script>
+</body>
+
+</html>
